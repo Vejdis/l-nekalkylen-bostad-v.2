@@ -102,7 +102,13 @@ const Index = () => {
       });
 
       if (error) {
-        toast.error("Kunde inte hämta annonsdata");
+        // Try to extract error message from the response
+        try {
+          const errorData = await error.context?.json?.();
+          toast.error(errorData?.error || "Kunde inte hämta annonsdata");
+        } catch {
+          toast.error("Kunde inte hämta annonsdata");
+        }
         console.error("Edge function error:", error);
         return;
       }
