@@ -67,10 +67,10 @@ Deno.serve(async (req) => {
           price = parseInt(askingMatch[1].replace(/\s/g, ''), 10);
         }
       }
-
-      const feeMatch = html.match(/Avgift\/månad[^<]*<[^>]*>[\s\S]*?([\d\s]+)\s*kr/i) ||
-                       html.match(/"fee":\s*"?([\d\s]+)"?/) ||
-                       html.match(/avgift[^<]*<[^>]*>[^<]*([\d\s]+)\s*kr\/mån/i);
+      // Hemnet pattern: Avgift</div>...<strong...>2 778 kr/mån
+      const feeMatch = html.match(/Avgift<\/div>[\s\S]*?>([\d\s]+)\s*kr\/m/i) ||
+                       html.match(/Avgift[\s\S]*?>([\d\s]+)\s*kr\/mån/i) ||
+                       html.match(/"fee":\s*"?([\d\s]+)"?/);
       if (feeMatch) {
         fee = parseInt(feeMatch[1].replace(/\s/g, ''), 10);
       }
