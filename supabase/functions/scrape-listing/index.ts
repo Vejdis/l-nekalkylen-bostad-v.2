@@ -67,9 +67,10 @@ Deno.serve(async (req) => {
           price = parseInt(askingMatch[1].replace(/\s/g, ''), 10);
         }
       }
-      // Hemnet pattern: Avgift</div>...<strong...>2 778 kr/mån (uses non-breaking spaces \xa0)
-      const feeMatch = html.match(/Avgift<\/div>[\s\S]*?>([\d\s\u00a0]+)\s*kr/i) ||
-                       html.match(/Avgift[\s\S]*?>([\d\s\u00a0]+)[\s\u00a0]*kr/i);
+      // Hemnet: fee from Apollo state JSON ("fee":{"__typename":"Money","amount":2778})
+      // or from HTML (Avgift</div>...<strong...>2 778 kr/mån with non-breaking spaces)
+      const feeMatch = html.match(/"fee":\s*\{[^}]*"amount"\s*:\s*(\d+)\s*\}/) ||
+                       html.match(/Avgift<\/div>[\s\S]*?>([\d\s\u00a0]+)[\s\u00a0]*kr/i);
       if (feeMatch) {
         fee = parseInt(feeMatch[1].replace(/[\s\u00a0]/g, ''), 10);
       }
