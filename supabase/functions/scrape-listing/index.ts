@@ -88,9 +88,12 @@ Deno.serve(async (req) => {
     });
 
     if (!response.ok) {
+      const errorMsg = response.status === 403 
+        ? `${parsedUrl.hostname} blockerar automatisk hämtning. Fyll i uppgifterna manuellt.`
+        : `Kunde inte hämta sidan (${response.status})`;
       return new Response(
-        JSON.stringify({ success: false, error: `Kunde inte hämta sidan (${response.status})` }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: errorMsg }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
