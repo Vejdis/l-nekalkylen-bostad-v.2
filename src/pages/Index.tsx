@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { supabase } from "@/integrations/supabase/client";
+import { safeSupabase } from "@/integrations/supabase/safe-client";
 import { toast } from "sonner";
 import { Link, Loader2 } from "lucide-react";
 
@@ -95,14 +95,18 @@ const Index = () => {
       return;
     }
 
+    if (!safeSupabase) {
+      toast.error("Backend ej tillgänglig i denna miljö");
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("scrape-listing", {
+      const { data, error } = await safeSupabase.functions.invoke("scrape-listing", {
         body: { url: listingUrl.trim() },
       });
 
       if (error) {
-        // Try to extract error message from the response
         try {
           const errorData = await error.context?.json?.();
           toast.error(errorData?.error || "Kunde inte hämta annonsdata");
@@ -176,7 +180,7 @@ const Index = () => {
                   onKeyDown={(e) => e.key === "Enter" && handleFetchListing()}
                 />
               </div>
-              <Button onClick={handleFetchListing} disabled={isLoading}>
+              <Button onClick={handleFetchListing} disabled={isLoading || !safeSupabase}>
                 {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Hämta"}
               </Button>
             </div>
