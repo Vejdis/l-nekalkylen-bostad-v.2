@@ -67,12 +67,11 @@ Deno.serve(async (req) => {
           price = parseInt(askingMatch[1].replace(/\s/g, ''), 10);
         }
       }
-      // Hemnet pattern: Avgift</div>...<strong...>2 778 kr/mån
-      const feeMatch = html.match(/Avgift<\/div>[\s\S]*?>([\d\s]+)\s*kr\/m/i) ||
-                       html.match(/Avgift[\s\S]*?>([\d\s]+)\s*kr\/mån/i) ||
-                       html.match(/"fee":\s*"?([\d\s]+)"?/);
+      // Hemnet pattern: Avgift</div>...<strong...>2 778 kr/mån (uses non-breaking spaces \xa0)
+      const feeMatch = html.match(/Avgift<\/div>[\s\S]*?>([\d\s\u00a0]+)\s*kr/i) ||
+                       html.match(/Avgift[\s\S]*?>([\d\s\u00a0]+)[\s\u00a0]*kr/i);
       if (feeMatch) {
-        fee = parseInt(feeMatch[1].replace(/\s/g, ''), 10);
+        fee = parseInt(feeMatch[1].replace(/[\s\u00a0]/g, ''), 10);
       }
     } else if (parsedUrl.hostname.includes('booli.se')) {
       // Booli: extract price and fee
