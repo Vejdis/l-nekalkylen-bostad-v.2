@@ -69,8 +69,11 @@ Deno.serve(async (req) => {
       }
       // Hemnet: fee from Apollo state JSON ("fee":{"__typename":"Money","amount":2778})
       // or from HTML (Avgift</div>...<strong...>2 778 kr/mån with non-breaking spaces)
-      const feeMatch = html.match(/"fee":\s*\{[^}]*"amount"\s*:\s*(\d+)\s*\}/) ||
-                       html.match(/Avgift<\/div>[\s\S]*?>([\d\s\u00a0]+)[\s\u00a0]*kr/i);
+      const feeRegex1 = /"fee"\s*:\s*\{[^}]*"amount"\s*:\s*(\d+)\s*\}/;
+      const feeRegex2 = /Avgift<\/div>[\s\S]*?>([\d\s\u00a0]+)[\s\u00a0]*kr/i;
+      console.log('Fee regex1 test:', feeRegex1.test(html));
+      console.log('Fee regex2 test:', feeRegex2.test(html));
+      const feeMatch = html.match(feeRegex1) || html.match(feeRegex2);
       if (feeMatch) {
         fee = parseInt(feeMatch[1].replace(/[\s\u00a0]/g, ''), 10);
       }
