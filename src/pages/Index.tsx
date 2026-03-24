@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { supabase } from "@/integrations/supabase/client";
+import { safeSupabase } from "@/integrations/supabase/safe-client";
 import { toast } from "sonner";
 import { Link, Loader2 } from "lucide-react";
 
