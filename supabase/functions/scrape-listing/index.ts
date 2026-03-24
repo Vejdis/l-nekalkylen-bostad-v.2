@@ -1,7 +1,59 @@
+// v2 - Fixed fee extraction with non-breaking space handling
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
+
+function extractHemnetData(html: string): { price: number | null; fee: number | null } {
+  let price: number | null = null;
+  let fee: number | null = null;
+
+  // Price: from JSON-LD schema.org data
+  const priceMatch = html.match(/"price"\s*:\s*(\d+)/);
+  if (priceMatch) {
+    price = parseInt(priceMatch[1], 10);
+  }
+
+  // Fee: from Apollo state JSON - "fee":{"__typename":"Money","amount":2778}
+  const feeAmountMatch = html.match(/"fee"\s*:\s*\{[^}]*?"amount"\s*:\s*(\d+)/);
+  if (feeAmountMatch) {
+    fee = parseInt(feeAmountMatch[1], 10);
+    console.log('Fee found via Apollo amount:', fee);
+  }
+
+  // Fallback: HTML pattern with non-breaking spaces
+  if (fee === null) {
+    const feeHtmlMatch = html.match(/Avgift<\/div>[^>]*>[^>]*>([^<]+)kr/i);
+    if (feeHtmlMatch) {
+      const cleaned = feeHtmlMatch[1].replace(/[^\d]/g, '');
+      if (cleaned) {
+        fee = parseInt(cleaned, 10);
+        console.log('Fee found via HTML pattern:', fee);
+      }
+    }
+  }
+
+  return { price, fee };
+}
+
+function extractBooliData(html: string): { price: number | null; fee: number | null } {
+  let price: number | null = null;
+  let fee: number | null = null;
+
+  const priceMatch = html.match(/"listPrice"\s*:\s*(\d+)/) ||
+                     html.match(/"price"\s*:\s*(\d+)/);
+  if (priceMatch) {
+    price = parseInt(priceMatch[1], 10);
+  }
+
+  const feeMatch = html.match(/"monthlyFee"\s*:\s*(\d+)/) ||
+                   html.match(/"fee"\s*:\s*\{[^}]*?"amount"\s*:\s*(\d+)/);
+  if (feeMatch) {
+    fee = parseInt((feeMatch[2] || feeMatch[1]).replace(/\D/g, ''), 10);
+  }
+
+  return { price, fee };
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -18,7 +70,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate URL is from Hemnet or Booli
     const parsedUrl = new URL(url);
     const validDomains = ['hemnet.se', 'www.hemnet.se', 'booli.se', 'www.booli.se'];
     if (!validDomains.includes(parsedUrl.hostname)) {
@@ -28,7 +79,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Fetching listing from:', url);
+    console.log('v2 - Fetching listing from:', url);
 
     const response = await fetch(url, {
       headers: {
@@ -46,62 +97,18 @@ Deno.serve(async (req) => {
     }
 
     const html = await response.text();
-    let price: number | null = null;
-    let fee: number | null = null;
+    const isHemnet = parsedUrl.hostname.includes('hemnet');
+    const result = isHemnet ? extractHemnetData(html) : extractBooliData(html);
 
-    if (parsedUrl.hostname.includes('hemnet.se')) {
-      // Hemnet: extract from JSON-LD or meta tags
-      const priceMatch = html.match(/"selling_price":\s*(\d+)/) ||
-                         html.match(/property-info__price[^>]*>[\s\S]*?([\d\s]+)\s*kr/i) ||
-                         html.match(/"price":\s*(\d+)/);
-      if (priceMatch) {
-        price = parseInt(priceMatch[1].replace(/\s/g, ''), 10);
-      }
-      
-      // Try utgångspris/begärt pris patterns
-      if (!price) {
-        const askingMatch = html.match(/Utgångspris[^<]*<[^>]*>[\s\S]*?([\d\s]+)\s*kr/i) ||
-                           html.match(/Begärt pris[^<]*<[^>]*>[\s\S]*?([\d\s]+)\s*kr/i) ||
-                           html.match(/([\d\s]{5,})\s*kr/);
-        if (askingMatch) {
-          price = parseInt(askingMatch[1].replace(/\s/g, ''), 10);
-        }
-      }
-      // Hemnet: fee from Apollo state JSON ("fee":{"__typename":"Money","amount":2778})
-      // or from HTML (Avgift</div>...<strong...>2 778 kr/mån with non-breaking spaces)
-      const feeRegex1 = /"fee"\s*:\s*\{[^}]*"amount"\s*:\s*(\d+)\s*\}/;
-      const feeRegex2 = /Avgift<\/div>[\s\S]*?>([\d\s\u00a0]+)[\s\u00a0]*kr/i;
-      console.log('Fee regex1 test:', feeRegex1.test(html));
-      console.log('Fee regex2 test:', feeRegex2.test(html));
-      const feeMatch = html.match(feeRegex1) || html.match(feeRegex2);
-      if (feeMatch) {
-        fee = parseInt(feeMatch[1].replace(/[\s\u00a0]/g, ''), 10);
-      }
-    } else if (parsedUrl.hostname.includes('booli.se')) {
-      // Booli: extract price and fee
-      const priceMatch = html.match(/"listPrice":\s*(\d+)/) ||
-                         html.match(/Pris[^<]*<[^>]*>[\s\S]*?([\d\s]+)\s*kr/i) ||
-                         html.match(/([\d\s]{5,})\s*kr/);
-      if (priceMatch) {
-        price = parseInt(priceMatch[1].replace(/\s/g, ''), 10);
-      }
-
-      const feeMatch = html.match(/Avgift[^<]*<[^>]*>[\s\S]*?([\d\s]+)\s*kr/i) ||
-                       html.match(/"monthlyFee":\s*"?([\d\s]+)"?/);
-      if (feeMatch) {
-        fee = parseInt(feeMatch[1].replace(/\s/g, ''), 10);
-      }
-    }
-
-    console.log('Extracted - Price:', price, 'Fee:', fee);
+    console.log('v2 Extracted - Price:', result.price, 'Fee:', result.fee);
 
     return new Response(
       JSON.stringify({
         success: true,
         data: {
-          price,
-          fee,
-          source: parsedUrl.hostname.includes('hemnet') ? 'hemnet' : 'booli',
+          price: result.price,
+          fee: result.fee,
+          source: isHemnet ? 'hemnet' : 'booli',
         },
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
