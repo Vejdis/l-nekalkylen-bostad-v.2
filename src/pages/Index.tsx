@@ -180,7 +180,7 @@ const Index = () => {
                   onKeyDown={(e) => e.key === "Enter" && handleFetchListing()}
                 />
               </div>
-              <Button onClick={handleFetchListing} disabled={isLoading}>
+              <Button onClick={handleFetchListing} disabled={isLoading || !safeSupabase}>
                 {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Hämta"}
               </Button>
             </div>
