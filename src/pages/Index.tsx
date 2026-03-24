@@ -95,14 +95,18 @@ const Index = () => {
       return;
     }
 
+    if (!safeSupabase) {
+      toast.error("Backend ej tillgänglig i denna miljö");
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("scrape-listing", {
+      const { data, error } = await safeSupabase.functions.invoke("scrape-listing", {
         body: { url: listingUrl.trim() },
       });
 
       if (error) {
-        // Try to extract error message from the response
         try {
           const errorData = await error.context?.json?.();
           toast.error(errorData?.error || "Kunde inte hämta annonsdata");
