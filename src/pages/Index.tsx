@@ -97,7 +97,7 @@ const Index = () => {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("fetch-listing", {
+      const { data, error } = await supabase.functions.invoke("scrape-listing", {
         body: { url: listingUrl.trim() },
       });
 
