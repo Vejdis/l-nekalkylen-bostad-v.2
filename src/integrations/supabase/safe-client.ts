@@ -1,18 +1,20 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-let client: SupabaseClient<Database> | null = null;
-
-try {
-  const url = import.meta.env.VITE_SUPABASE_URL;
-  const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  if (url && key) {
-    // Dynamic import to avoid crash when env vars are missing
-    const { supabase } = await import('./client');
-    client = supabase;
+function getClient(): SupabaseClient<Database> | null {
+  try {
+    const url = import.meta.env.VITE_SUPABASE_URL;
+    const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    if (url && key) {
+      // Use require-style static import — client.ts will only crash if env vars are truly missing
+      // but we've already checked they exist
+      const { supabase } = require('./client');
+      return supabase;
+    }
+  } catch {
+    console.warn('Supabase not available — running in offline mode');
   }
-} catch {
-  console.warn('Supabase not available — running in offline mode');
+  return null;
 }
 
-export const safeSupabase = client;
+export const safeSupabase = getClient();
