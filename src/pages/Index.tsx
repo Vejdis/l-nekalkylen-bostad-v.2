@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,32 +14,69 @@ const formatSEK = (n: number) =>
 
 const formatPercent = (n: number) => `${n.toFixed(1)} %`;
 
-const inputField = (
-  label: string,
-  value: number,
-  onChange: (v: number) => void,
-  suffix?: string,
-  step?: number
-) => (
-  <div className="space-y-2">
-    <Label className="text-sm font-medium text-muted-foreground">{label}</Label>
-    <div className="relative">
-      <Input
-        type="number"
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        step={step || 1000}
-        min={0}
-        className="text-lg font-semibold pr-12"
-      />
-      {suffix && (
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-          {suffix}
-        </span>
-      )}
+const InputField = ({
+  label,
+  value,
+  onChange,
+  suffix,
+  step,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  suffix?: string;
+  step?: number;
+}) => {
+  const [display, setDisplay] = useState(value.toString());
+  const [hasFocus, setHasFocus] = useState(false);
+
+  useEffect(() => {
+    if (!hasFocus) {
+      setDisplay(value.toString());
+    }
+  }, [value, hasFocus]);
+
+  const commit = (raw: string) => {
+    if (raw === "" || raw === "-" || isNaN(Number(raw))) {
+      setDisplay(value.toString());
+      return;
+    }
+    const num = Number(raw);
+    setDisplay(num.toString());
+    onChange(num);
+  };
+
+  return (
+    <div className="space-y-2">
+      <Label className="text-sm font-medium text-muted-foreground">{label}</Label>
+      <div className="relative">
+        <Input
+          type="number"
+          value={hasFocus ? display : value}
+          onChange={(e) => {
+            setDisplay(e.target.value);
+          }}
+          onFocus={() => {
+            setHasFocus(true);
+            setDisplay(value.toString());
+          }}
+          onBlur={() => {
+            setHasFocus(false);
+            commit(display);
+          }}
+          step={step || 1000}
+          min={0}
+          className="text-lg font-semibold pr-12"
+        />
+        {suffix && (
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+            {suffix}
+          </span>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const resultRow = (label: string, value: string, highlight?: boolean) => (
   <div className={`flex justify-between items-center py-2 ${highlight ? "font-bold text-lg" : ""}`}>
@@ -226,10 +263,10 @@ const Index = () => {
               <CardTitle className="text-base font-medium text-muted-foreground">🏠 Bostad</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {inputField("Utgångspris", basePrice, setBasePrice, "kr")}
-              {inputField("Kontantinsats", downPayment, setDownPayment, "kr")}
-              {inputField("Månadsavgift till föreningen", fee, setFee, "kr", 100)}
-              {inputField("Ränta", interestRate, setInterestRate, "%", 0.1)}
+              <InputField label="Utgångspris" value={basePrice} onChange={setBasePrice} suffix="kr" />
+              <InputField label="Kontantinsats" value={downPayment} onChange={setDownPayment} suffix="kr" />
+              <InputField label="Månadsavgift till föreningen" value={fee} onChange={setFee} suffix="kr" step={100} />
+              <InputField label="Ränta" value={interestRate} onChange={setInterestRate} suffix="%" step={0.1} />
             </CardContent>
           </Card>
 
@@ -238,10 +275,10 @@ const Index = () => {
               <CardTitle className="text-base font-medium text-muted-foreground">🚗 Bil</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {inputField("Bilens pris", carPrice, setCarPrice, "kr")}
-              {inputField("Kontantinsats", carDownPayment, setCarDownPayment, "kr")}
-              {inputField("Ränta", carInterestRate, setCarInterestRate, "%", 0.1)}
-              {inputField("Övrig månadskostnad (försäkring m.m.)", carMonthlyCost, setCarMonthlyCost, "kr", 100)}
+              <InputField label="Bilens pris" value={carPrice} onChange={setCarPrice} suffix="kr" />
+              <InputField label="Kontantinsats" value={carDownPayment} onChange={setCarDownPayment} suffix="kr" />
+              <InputField label="Ränta" value={carInterestRate} onChange={setCarInterestRate} suffix="%" step={0.1} />
+              <InputField label="Övrig månadskostnad (försäkring m.m.)" value={carMonthlyCost} onChange={setCarMonthlyCost} suffix="kr" step={100} />
             </CardContent>
           </Card>
         </div>
