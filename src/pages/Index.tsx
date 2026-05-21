@@ -263,10 +263,10 @@ const Index = () => {
               <CardTitle className="text-base font-medium text-muted-foreground">🏠 Bostad</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {inputField("Utgångspris", basePrice, setBasePrice, "kr")}
-              {inputField("Kontantinsats", downPayment, setDownPayment, "kr")}
-              {inputField("Månadsavgift till föreningen", fee, setFee, "kr", 100)}
-              {inputField("Ränta", interestRate, setInterestRate, "%", 0.1)}
+              <InputField label="Utgångspris" value={basePrice} onChange={setBasePrice} suffix="kr" />
+              <InputField label="Kontantinsats" value={downPayment} onChange={setDownPayment} suffix="kr" />
+              <InputField label="Månadsavgift till föreningen" value={fee} onChange={setFee} suffix="kr" step={100} />
+              <InputField label="Ränta" value={interestRate} onChange={setInterestRate} suffix="%" step={0.1} />
             </CardContent>
           </Card>
 
