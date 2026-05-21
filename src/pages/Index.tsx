@@ -14,32 +14,69 @@ const formatSEK = (n: number) =>
 
 const formatPercent = (n: number) => `${n.toFixed(1)} %`;
 
-const inputField = (
-  label: string,
-  value: number,
-  onChange: (v: number) => void,
-  suffix?: string,
-  step?: number
-) => (
-  <div className="space-y-2">
-    <Label className="text-sm font-medium text-muted-foreground">{label}</Label>
-    <div className="relative">
-      <Input
-        type="number"
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        step={step || 1000}
-        min={0}
-        className="text-lg font-semibold pr-12"
-      />
-      {suffix && (
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-          {suffix}
-        </span>
-      )}
+const InputField = ({
+  label,
+  value,
+  onChange,
+  suffix,
+  step,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  suffix?: string;
+  step?: number;
+}) => {
+  const [display, setDisplay] = useState(value.toString());
+  const [hasFocus, setHasFocus] = useState(false);
+
+  useEffect(() => {
+    if (!hasFocus) {
+      setDisplay(value.toString());
+    }
+  }, [value, hasFocus]);
+
+  const commit = (raw: string) => {
+    if (raw === "" || raw === "-" || isNaN(Number(raw))) {
+      setDisplay(value.toString());
+      return;
+    }
+    const num = Number(raw);
+    setDisplay(num.toString());
+    onChange(num);
+  };
+
+  return (
+    <div className="space-y-2">
+      <Label className="text-sm font-medium text-muted-foreground">{label}</Label>
+      <div className="relative">
+        <Input
+          type="number"
+          value={hasFocus ? display : value}
+          onChange={(e) => {
+            setDisplay(e.target.value);
+          }}
+          onFocus={() => {
+            setHasFocus(true);
+            setDisplay(value.toString());
+          }}
+          onBlur={() => {
+            setHasFocus(false);
+            commit(display);
+          }}
+          step={step || 1000}
+          min={0}
+          className="text-lg font-semibold pr-12"
+        />
+        {suffix && (
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+            {suffix}
+          </span>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const resultRow = (label: string, value: string, highlight?: boolean) => (
   <div className={`flex justify-between items-center py-2 ${highlight ? "font-bold text-lg" : ""}`}>
